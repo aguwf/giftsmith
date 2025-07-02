@@ -1,0 +1,126 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Test Backend
+  test-backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn'
+        cache-dependency-path: giftsmith-api/yarn.lock
+    
+    - name: Install Backend Dependencies
+      working-directory: ./giftsmith-api
+      run: yarn install --frozen-lockfile
+    
+    - name: Run Backend Tests
+      working-directory: ./giftsmith-api
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET: test_jwt_secret_32_chars_long
+        COOKIE_SECRET: test_cookie_secret_32_chars_long
+      run: |
+        yarn test:unit
+        yarn test:integration:http
+
+  # Test Frontend
+  test-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn'
+        cache-dependency-path: giftsmith-storefront/yarn.lock
+    
+    - name: Install Frontend Dependencies
+      working-directory: ./giftsmith-storefront
+      run: yarn install --frozen-lockfile
+    
+    - name: Run Frontend Lint
+      working-directory: ./giftsmith-storefront
+      run: yarn lint
+    
+    - name: Build Frontend
+      working-directory: ./giftsmith-storefront
+      run: yarn build
+
+  # Deploy Notification
+  deploy-notification:
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Deploy Notification
+      run: |
+        echo "✅ Tests passed! Ready for deployment."
+        echo ""
+        echo "🚀 To deploy to Render:"
+        echo "1. Go to https://render.com"
+        echo "2. Connect your GitHub repository"
+        echo "3. Create a new PostgreSQL database"
+        echo "4. Create a new Web Service for backend (giftsmith-api)"
+        echo "5. Create a new Web Service for frontend (giftsmith-storefront)"
+        echo "6. Set environment variables in Render dashboard"
+        echo ""
+        echo "📋 Required environment variables:"
+        echo ""
+        echo "Backend Service (giftsmith-api):"
+        echo "- DATABASE_URL (from Render PostgreSQL)"
+        echo "- JWT_SECRET"
+        echo "- COOKIE_SECRET"
+        echo "- STORE_CORS=https://your-frontend.onrender.com"
+        echo "- ADMIN_CORS=https://your-frontend.onrender.com"
+        echo "- AUTH_CORS=https://your-frontend.onrender.com"
+        echo "- CONTENTFUL_MANAGEMENT_ACCESS_TOKEN"
+        echo "- CONTENTFUL_DELIVERY_TOKEN"
+        echo "- CONTENTFUL_SPACE_ID"
+        echo "- CONTENTFUL_ENVIRONMENT=production"
+        echo ""
+        echo "Frontend Service (giftsmith-storefront):"
+        echo "- NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY"
+        echo "- MEDUSA_BACKEND_URL=https://your-backend.onrender.com"
+        echo "- NEXT_PUBLIC_BASE_URL=https://your-frontend.onrender.com"
+        echo "- NEXT_PUBLIC_STRIPE_KEY"
+        echo ""
+        echo "🔗 Setup Guide: README-ONLINE-DEPLOYMENT.md" 

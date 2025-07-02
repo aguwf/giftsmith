@@ -1,0 +1,25 @@
+// Step states
+.step {
+  &.selected {
+    border: 2px solid #3a4047;
+  }
+
+  &.completed {
+    border: 2px solid #f3f4f5;
+    background: #3a4047;
+  }
+}
+
+// Progress bar transitions
+.progress {
+  transition: background 1s;
+}
+
+.percent {
+  transition: width 1s;
+}
+
+// Step transitions
+.step {
+  transition: background 1s;
+} 

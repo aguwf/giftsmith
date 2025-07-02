@@ -1,0 +1,14 @@
+{
+  "name": "giftsmith",
+  "version": "1.0.0",
+  "description": "Giftsmith is a platform for creating and managing gift cards and gift certificates.",
+  "author": "Giftsmith",
+  "scripts": {
+    "dev:api": "cd ./giftsmith-api && yarn dev",
+    "dev:web": "cd ./giftsmith-storefront && yarn dev",
+    "dev": "concurrently \"yarn dev:api\" \"yarn dev:web\""
+  },
+  "dependencies": {
+    "class-validator": "^0.14.2"
+  }
+}

@@ -1,0 +1,71 @@
+.scrollArea {
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+  position: relative;
+  overflow-x: auto;
+  max-width: 100%;
+  margin-bottom: 1rem;
+}
+
+.itemsRow {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1rem;
+}
+
+.itemCard {
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem 0.5rem 0.5rem;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  position: relative;
+}
+
+.itemCard:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  border-color: #c7d2fe;
+}
+
+.removeBtn:hover {
+  background: #fef2f2;
+}
+
+/* Custom scrollbar for webkit browsers */
+.scrollArea::-webkit-scrollbar {
+  height: 8px;
+}
+.scrollArea::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+.scrollArea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Only keep the fade effect for the right edge */
+.fade-right {
+  background: linear-gradient(to left, #f9fafb 80%, rgba(249,250,251,0));
+  border-radius: 0 0.75rem 0.75rem 0;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+} 
