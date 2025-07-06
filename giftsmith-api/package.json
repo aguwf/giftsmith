@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "build": "medusa build && ln -s .medusa/server/public/ public",
-    "seed": "medusa exec ./src/scripts/seed.ts",
+    "seed": "medusa exec ./src/scripts/seed.ts && medusa exec ./src/scripts/seed-product-types.ts",
     "start": "medusa start",
     "dev": "medusa develop",
     "predeploy": "medusa db:migrate",
@@ -34,6 +34,8 @@
     "awilix": "^8.0.1",
     "contentful": "^11.7.2",
     "contentful-management": "^11.53.0",
+    "dateformat": "^5.0.3",
+    "dayjs": "^1.11.13",
     "framer-motion": "^12.19.0",
     "medusa-react": "^9.0.18",
     "pg": "^8.13.0"

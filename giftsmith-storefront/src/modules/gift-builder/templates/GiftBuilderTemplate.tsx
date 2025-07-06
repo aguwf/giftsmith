@@ -2,19 +2,19 @@
 
 import React from "react"
 import { useGiftBuilder } from "../hooks/use-gift-builder"
-import Stepper from "../components/Stepper"
-import StepBox from "../components/StepBox"
-import StepItems from "../components/StepItems"
-import StepCard from "../components/StepCard"
-import StepReview from "../components/StepReview"
+import ModernStepper from "../components/ModernStepper"
+import ModernStepBox from "../components/ModernStepBox"
+import ModernStepItems from "../components/ModernStepItems"
+import ModernStepCard from "../components/ModernStepCard"
+import ModernStepReview from "../components/ModernStepReview"
 import { AnimatePresence, motion } from "motion/react"
-import GiftSummary from "../components/GiftSummary"
+import ModernGiftSummary from "../components/ModernGiftSummary"
 
-const steps = [StepBox, StepItems, StepCard, StepReview]
+const steps = [ModernStepBox, ModernStepItems, ModernStepCard, ModernStepReview]
 
 const StepContent = () => {
   const { currentStep } = useGiftBuilder()
-  const Step = steps[currentStep] || StepBox
+  const Step = steps[currentStep] || ModernStepBox
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -22,7 +22,7 @@ const StepContent = () => {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -40 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
         className="w-full"
       >
         <Step />
@@ -32,12 +32,12 @@ const StepContent = () => {
 }
 
 const GiftBuilderTemplate = () => (
-  <div className="flex flex-col bg-gray-50 min-h-screen">
-    <Stepper />
-    <div className="flex flex-col flex-1 justify-center items-center pb-16">
+  <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 min-h-screen">
+    <ModernStepper />
+    <div className="flex-1">
       <StepContent />
     </div>
-    <GiftSummary />
+    <ModernGiftSummary />
   </div>
 )
 

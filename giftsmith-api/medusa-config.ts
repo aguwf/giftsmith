@@ -18,6 +18,17 @@ module.exports = defineConfig({
       resolve: "./src/modules/product-types",
       options: {},
     },
+    // {
+    //   resolve: "./src/modules/vnpay-payment-provider",
+    //   options: {
+    //     tmnCode: process.env.VNPAY_TMN_CODE!,
+    //     secureSecret: process.env.VNPAY_HASH_SECRET!,
+    //     vnpayHost: process.env.VNPAY_HOST!,
+    //     testMode: process.env.NODE_ENV === "development",
+    //     hashAlgorithm: "SHA512",
+    //     enableLog: process.env.NODE_ENV === "development",
+    //   },
+    // },
     {
       resolve: "@medusajs/medusa/cache-redis",
       options: {
@@ -48,10 +59,13 @@ module.exports = defineConfig({
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     },
-    workerMode: process.env.MEDUSA_WORKER_MODE as "shared" | "worker" | "server",
+    workerMode: process.env.MEDUSA_WORKER_MODE as
+      | "shared"
+      | "worker"
+      | "server",
     redisUrl: process.env.REDIS_URL,
   },
   admin: {
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
-  },  
+  },
 });
