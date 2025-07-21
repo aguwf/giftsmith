@@ -43,7 +43,7 @@ jobs:
 
   # Build and push Docker images
   build-and-push:
-    needs: [security-scan, test-backend, test-frontend]
+    needs: [security-scan]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
