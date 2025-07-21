@@ -19,34 +19,42 @@ module.exports = defineConfig({
       options: {},
     },
     // {
-    //   resolve: "./src/modules/vnpay-payment-provider",
+    //   resolve: "@medusajs/medusa/cache-redis",
     //   options: {
-    //     tmnCode: process.env.VNPAY_TMN_CODE!,
-    //     secureSecret: process.env.VNPAY_HASH_SECRET!,
-    //     vnpayHost: process.env.VNPAY_HOST!,
-    //     testMode: process.env.NODE_ENV === "development",
-    //     hashAlgorithm: "SHA512",
-    //     enableLog: process.env.NODE_ENV === "development",
+    //     redisUrl: process.env.REDIS_URL,
+    //   },
+    // },
+    // {
+    //   resolve: "@medusajs/medusa/event-bus-redis",
+    //   options: {
+    //     redisUrl: process.env.REDIS_URL,
+    //   },
+    // },
+    // {
+    //   resolve: "@medusajs/medusa/workflow-engine-redis",
+    //   options: {
+    //     redis: {
+    //       url: process.env.REDIS_URL,
+    //     },
     //   },
     // },
     {
-      resolve: "@medusajs/medusa/cache-redis",
+      resolve: "@medusajs/medusa/payment",
       options: {
-        redisUrl: process.env.REDIS_URL,
-      },
-    },
-    {
-      resolve: "@medusajs/medusa/event-bus-redis",
-      options: {
-        redisUrl: process.env.REDIS_URL,
-      },
-    },
-    {
-      resolve: "@medusajs/medusa/workflow-engine-redis",
-      options: {
-        redis: {
-          url: process.env.REDIS_URL,
-        },
+        providers: [
+          {
+            resolve: "./src/modules/payment-vnpay",
+            id: "vnpay",
+            options: {
+              tmnCode: process.env.VNPAY_TMN_CODE,
+              secureSecret: process.env.VNPAY_HASH_SECRET,
+              vnpayHost: process.env.VNPAY_HOST,
+              testMode: process.env.NODE_ENV === "development",
+              hashAlgorithm: "SHA512",
+              enableLog: process.env.NODE_ENV === "development",
+            },
+          },
+        ],
       },
     },
   ],
@@ -63,7 +71,7 @@ module.exports = defineConfig({
       | "shared"
       | "worker"
       | "server",
-    redisUrl: process.env.REDIS_URL,
+    // redisUrl: process.env.REDIS_URL,
   },
   admin: {
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",

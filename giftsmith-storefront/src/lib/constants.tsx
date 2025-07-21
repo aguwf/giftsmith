@@ -30,12 +30,19 @@ export const paymentInfoMap: Record<
     title: "Manual Payment",
     icon: <CreditCard />,
   },
+  pp_vnpay_vnpay: {
+    title: "VNPay",
+    icon: <CreditCard />,
+  },
   // Add more payment providers here
 }
 
 // This only checks if it is native stripe for card payments, it ignores the other stripe-based providers
 export const isStripe = (providerId?: string) => {
   return providerId?.startsWith("pp_stripe_")
+}
+export const isVnpay = (providerId?: string) => {
+  return providerId?.startsWith("pp_vnpay_")
 }
 export const isPaypal = (providerId?: string) => {
   return providerId?.startsWith("pp_paypal")

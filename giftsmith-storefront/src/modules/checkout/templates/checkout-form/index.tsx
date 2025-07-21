@@ -1,5 +1,5 @@
 import { listCartShippingMethods } from "@lib/data/fulfillment"
-import { listCartPaymentMethods } from "@lib/data/payment"
+import { listCartPaymentMethods } from "@lib/data/payment-server"
 import { HttpTypes } from "@medusajs/types"
 import Addresses from "@modules/checkout/components/addresses"
 import Payment from "@modules/checkout/components/payment"
@@ -19,13 +19,14 @@ export default async function CheckoutForm({
 
   const shippingMethods = await listCartShippingMethods(cart.id)
   const paymentMethods = await listCartPaymentMethods(cart.region?.id ?? "")
+  console.log("🚀 ~ paymentMethods:", paymentMethods)
 
   if (!shippingMethods || !paymentMethods) {
     return null
   }
 
   return (
-    <div className="w-full grid grid-cols-1 gap-y-8">
+    <div className="gap-y-8 grid grid-cols-1 w-full">
       <Addresses cart={cart} customer={customer} />
 
       <Shipping cart={cart} availableShippingMethods={shippingMethods} />

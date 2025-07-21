@@ -41,7 +41,7 @@ const PaymentContainer: React.FC<PaymentContainerProps> = ({
         }
       )}
     >
-      <div className="flex items-center justify-between ">
+      <div className="flex justify-between items-center">
         <div className="flex items-center gap-x-4">
           <Radio checked={selectedPaymentOptionId === paymentProviderId} />
           <Text className="text-base-regular">
@@ -107,7 +107,7 @@ export const StripeCardContainer = ({
       {selectedPaymentOptionId === paymentProviderId &&
         (stripeReady ? (
           <div className="my-4 transition-all duration-150 ease-in-out">
-            <Text className="txt-medium-plus text-ui-fg-base mb-1">
+            <Text className="mb-1 text-ui-fg-base txt-medium-plus">
               Enter your card details:
             </Text>
             <CardElement
@@ -124,6 +124,37 @@ export const StripeCardContainer = ({
         ) : (
           <SkeletonCardDetails />
         ))}
+    </PaymentContainer>
+  )
+}
+
+export const VnpayContainer = ({
+  paymentProviderId,
+  selectedPaymentOptionId,
+  paymentInfoMap,
+  disabled = false,
+}: Omit<PaymentContainerProps, "children"> & {
+  setCardBrand: (brand: string) => void
+  setError: (error: string | null) => void
+  setCardComplete: (complete: boolean) => void
+}) => {
+  return (
+    <PaymentContainer
+      paymentProviderId={paymentProviderId}
+      selectedPaymentOptionId={selectedPaymentOptionId}
+      paymentInfoMap={paymentInfoMap}
+      disabled={disabled}
+    >
+      {selectedPaymentOptionId === paymentProviderId && (
+        <div className="my-4 transition-all duration-150 ease-in-out">
+          <Text className="mb-1 text-ui-fg-base txt-medium-plus">
+            You will be redirected to VNPay to complete your payment securely.
+          </Text>
+          <Text className="text-ui-fg-subtle text-sm">
+            Click "Continue to payment" to proceed to VNPay's secure payment page.
+          </Text>
+        </div>
+      )}
     </PaymentContainer>
   )
 }

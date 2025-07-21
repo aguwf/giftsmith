@@ -1,7 +1,8 @@
 "use client"
 
-import { isManual, isStripe } from "@lib/constants"
+import { isManual, isStripe, isVnpay } from "@lib/constants"
 import { placeOrder } from "@lib/data/cart"
+import { generatePaymentUrlServer } from "@lib/data/payment-server"
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
 import { useElements, useStripe } from "@stripe/react-stripe-js"
@@ -38,6 +39,14 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
     case isManual(paymentSession?.provider_id):
       return (
         <ManualTestPaymentButton notReady={notReady} data-testid={dataTestId} />
+      )
+    case isVnpay(paymentSession?.provider_id):
+      return (
+        <VnPayPaymentButton
+          notReady={notReady}
+          cart={cart}
+          data-testid={dataTestId}
+        />
       )
     default:
       return <Button disabled>Select a payment method</Button>
@@ -185,6 +194,73 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
       <ErrorMessage
         error={errorMessage}
         data-testid="manual-payment-error-message"
+      />
+    </>
+  )
+}
+
+const VnPayPaymentButton = ({
+  notReady,
+  cart,
+  "data-testid": dataTestId,
+}: {
+  notReady: boolean
+  cart: HttpTypes.StoreCart
+  "data-testid"?: string
+}) => {
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const handlePayment = async () => {
+    setSubmitting(true)
+    setErrorMessage(null)
+
+    try {
+      // Get the payment session
+      const paymentSession = cart.payment_collection?.payment_sessions?.find(
+        (s) => s.status === "pending"
+      )
+
+      if (!paymentSession) {
+        throw new Error("No payment session found")
+      }
+
+      // Generate payment URL
+      const paymentUrlResponse = await generatePaymentUrlServer(
+        paymentSession.provider_id,
+        {
+          amount: cart.total || 0,
+          orderId: cart.id,
+          orderInfo: `Order ${cart.id}`,
+        }
+      )
+
+      if (!paymentUrlResponse) {
+        throw new Error("Failed to generate payment URL")
+      }
+
+      // Redirect to payment URL
+      window.location.href = paymentUrlResponse.payment_url
+    } catch (error: any) {
+      setErrorMessage(error.message || "Failed to generate payment URL")
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <>
+      <Button
+        disabled={notReady}
+        size="large"
+        data-testid={dataTestId}
+        onClick={handlePayment}
+        isLoading={submitting}
+      >
+        Continue with VNPay
+      </Button>
+      <ErrorMessage
+        error={errorMessage}
+        data-testid="vnpay-payment-error-message"
       />
     </>
   )

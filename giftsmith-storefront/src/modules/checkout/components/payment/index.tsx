@@ -1,13 +1,19 @@
 "use client"
 
 import { RadioGroup } from "@headlessui/react"
-import { isStripe as isStripeFunc, paymentInfoMap } from "@lib/constants"
+import {
+  isStripe as isStripeFunc,
+  isVnpay as isVnpayFunc,
+  paymentInfoMap,
+} from "@lib/constants"
 import { initiatePaymentSession } from "@lib/data/cart"
+import { requiresExternalPayment } from "@lib/data/payment"
 import { CheckCircleSolid, CreditCard } from "@medusajs/icons"
 import { Button, Container, Heading, Text, clx } from "@medusajs/ui"
 import ErrorMessage from "@modules/checkout/components/error-message"
 import PaymentContainer, {
   StripeCardContainer,
+  VnpayContainer,
 } from "@modules/checkout/components/payment-container"
 import Divider from "@modules/common/components/divider"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
@@ -39,6 +45,7 @@ const Payment = ({
   const isOpen = searchParams.get("step") === "payment"
 
   const isStripe = isStripeFunc(selectedPaymentMethod)
+  const isExternalPayment = requiresExternalPayment(selectedPaymentMethod)
 
   const setPaymentMethod = async (method: string) => {
     setError(null)
@@ -108,7 +115,7 @@ const Payment = ({
 
   return (
     <div className="bg-white">
-      <div className="flex flex-row items-center justify-between mb-6">
+      <div className="flex flex-row justify-between items-center mb-6">
         <Heading
           level="h2"
           className={clx(
@@ -153,6 +160,15 @@ const Payment = ({
                         setError={setError}
                         setCardComplete={setCardComplete}
                       />
+                    ) : isVnpayFunc(paymentMethod.id) ? (
+                      <VnpayContainer
+                        paymentProviderId={paymentMethod.id}
+                        selectedPaymentOptionId={selectedPaymentMethod}
+                        paymentInfoMap={paymentInfoMap}
+                        setCardBrand={setCardBrand}
+                        setCardComplete={setCardComplete}
+                        setError={setError}
+                      />
                     ) : (
                       <PaymentContainer
                         paymentInfoMap={paymentInfoMap}
@@ -168,11 +184,11 @@ const Payment = ({
 
           {paidByGiftcard && (
             <div className="flex flex-col w-1/3">
-              <Text className="txt-medium-plus text-ui-fg-base mb-1">
+              <Text className="mb-1 text-ui-fg-base txt-medium-plus">
                 Payment method
               </Text>
               <Text
-                className="txt-medium text-ui-fg-subtle"
+                className="text-ui-fg-subtle txt-medium"
                 data-testid="payment-method-summary"
               >
                 Gift card
@@ -197,7 +213,9 @@ const Payment = ({
             data-testid="submit-payment-button"
           >
             {!activeSession && isStripeFunc(selectedPaymentMethod)
-              ? " Enter card details"
+              ? "Enter card details"
+              : isExternalPayment
+              ? "Continue to payment"
               : "Continue to review"}
           </Button>
         </div>
@@ -206,11 +224,11 @@ const Payment = ({
           {cart && paymentReady && activeSession ? (
             <div className="flex items-start gap-x-1 w-full">
               <div className="flex flex-col w-1/3">
-                <Text className="txt-medium-plus text-ui-fg-base mb-1">
+                <Text className="mb-1 text-ui-fg-base txt-medium-plus">
                   Payment method
                 </Text>
                 <Text
-                  className="txt-medium text-ui-fg-subtle"
+                  className="text-ui-fg-subtle txt-medium"
                   data-testid="payment-method-summary"
                 >
                   {paymentInfoMap[activeSession?.provider_id]?.title ||
@@ -218,14 +236,14 @@ const Payment = ({
                 </Text>
               </div>
               <div className="flex flex-col w-1/3">
-                <Text className="txt-medium-plus text-ui-fg-base mb-1">
+                <Text className="mb-1 text-ui-fg-base txt-medium-plus">
                   Payment details
                 </Text>
                 <div
-                  className="flex gap-2 txt-medium text-ui-fg-subtle items-center"
+                  className="flex items-center gap-2 text-ui-fg-subtle txt-medium"
                   data-testid="payment-details-summary"
                 >
-                  <Container className="flex items-center h-7 w-fit p-2 bg-ui-button-neutral-hover">
+                  <Container className="flex items-center bg-ui-button-neutral-hover p-2 w-fit h-7">
                     {paymentInfoMap[selectedPaymentMethod]?.icon || (
                       <CreditCard />
                     )}
@@ -240,11 +258,11 @@ const Payment = ({
             </div>
           ) : paidByGiftcard ? (
             <div className="flex flex-col w-1/3">
-              <Text className="txt-medium-plus text-ui-fg-base mb-1">
+              <Text className="mb-1 text-ui-fg-base txt-medium-plus">
                 Payment method
               </Text>
               <Text
-                className="txt-medium text-ui-fg-subtle"
+                className="text-ui-fg-subtle txt-medium"
                 data-testid="payment-method-summary"
               >
                 Gift card

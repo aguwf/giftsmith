@@ -1,0 +1,206 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Security and dependency scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  # Build and push Docker images
+  build-and-push:
+    needs: [security-scan, test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./giftsmith-api
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./giftsmith-storefront
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  # Deploy to VPS
+  deploy:
+    needs: [build-and-push]
+    runs-on: [self-hosted, prod]
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+
+    steps:
+      - name: Deploy to VPS
+        run: |
+          # Set environment variables
+          export ENVIRONMENT="${{ github.event.inputs.environment || 'staging' }}"
+          export API_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${{ github.sha }}"
+          export FRONTEND_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}"
+          export COMPOSE_FILE="docker-compose.${ENVIRONMENT}.yml"
+
+          # Create deployment directory if it doesn't exist
+          mkdir -p /opt/giftsmith/${ENVIRONMENT}
+          cd /opt/giftsmith/${ENVIRONMENT}
+
+          # Create docker-compose file
+          cat > ${COMPOSE_FILE} << 'EOF'
+          version: '3.8'
+
+          services:
+            api:
+              image: ${API_IMAGE}
+              container_name: giftsmith-api-${ENVIRONMENT}
+              restart: unless-stopped
+              ports:
+                - "9000:9000"
+              environment:
+                - NODE_ENV=production
+                - DATABASE_URL=${DATABASE_URL}
+                - REDIS_URL=${REDIS_URL}
+                - JWT_SECRET=${JWT_SECRET}
+                - COOKIE_SECRET=${COOKIE_SECRET}
+                - STORE_CORS=${STORE_CORS}
+                - ADMIN_CORS=${ADMIN_CORS}
+                - AUTH_CORS=${AUTH_CORS}
+                - CONTENTFUL_MANAGEMENT_ACCESS_TOKEN=${CONTENTFUL_MANAGEMENT_ACCESS_TOKEN}
+                - CONTENTFUL_DELIVERY_TOKEN=${CONTENTFUL_DELIVERY_TOKEN}
+                - CONTENTFUL_SPACE_ID=${CONTENTFUL_SPACE_ID}
+                - CONTENTFUL_ENVIRONMENT=${CONTENTFUL_ENVIRONMENT}
+              volumes:
+                - api_uploads:/app/uploads
+              networks:
+                - giftsmith-network
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+                interval: 30s
+                timeout: 10s
+                retries: 3
+                start_period: 40s
+
+            frontend:
+              image: ${FRONTEND_IMAGE}
+              container_name: giftsmith-frontend-${ENVIRONMENT}
+              restart: unless-stopped
+              ports:
+                - "8000:8000"
+              environment:
+                - NODE_ENV=production
+                - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
+                - MEDUSA_BACKEND_URL=${MEDUSA_BACKEND_URL}
+                - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+                - NEXT_PUBLIC_STRIPE_KEY=${NEXT_PUBLIC_STRIPE_KEY}
+              networks:
+                - giftsmith-network
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:8000"]
+                interval: 30s
+                timeout: 10s
+                retries: 3
+                start_period: 40s
+              depends_on:
+                api:
+                  condition: service_healthy
+
+          volumes:
+            api_uploads:
+
+          networks:
+            giftsmith-network:
+              driver: bridge
+          EOF
+
+          # Login to GitHub Container Registry
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+          # Pull latest images
+          docker pull ${API_IMAGE}
+          docker pull ${FRONTEND_IMAGE}
+
+          # Stop and remove existing containers
+          docker-compose -f ${COMPOSE_FILE} down --remove-orphans
+
+          # Start new containers
+          docker-compose -f ${COMPOSE_FILE} up -d
+
+          # Wait for services to be healthy
+          echo "Waiting for services to be healthy..."
+          timeout 300 bash -c 'until docker-compose -f ${COMPOSE_FILE} ps | grep -q "healthy"; do sleep 10; done'
+
+          # Clean up old images
+          docker image prune -f
+
+          echo "Deployment completed successfully!"
