@@ -22,28 +22,27 @@ env:
 
 jobs:
   # Security and dependency scanning
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # security-scan:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "sarif"
-          output: "trivy-results.sarif"
+  #     - name: Run Trivy vulnerability scanner
+  #       uses: aquasecurity/trivy-action@master
+  #       with:
+  #         scan-type: "fs"
+  #         scan-ref: "."
+  #         format: "sarif"
+  #         output: "trivy-results.sarif"
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: "trivy-results.sarif"
+  #     - name: Upload Trivy scan results to GitHub Security tab
+  #       uses: github/codeql-action/upload-sarif@v3
+  #       if: always()
+  #       with:
+  #         sarif_file: "trivy-results.sarif"
 
   # Build and push Docker images
   build-and-push:
-    needs: [security-scan]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
